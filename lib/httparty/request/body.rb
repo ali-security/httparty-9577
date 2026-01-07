@@ -27,6 +27,13 @@ module HTTParty
 
       private
 
+      # https://html.spec.whatwg.org/#multipart-form-data
+      MULTIPART_FORM_DATA_REPLACEMENT_TABLE = {
+        '"'  => '%22',
+        "\r" => '%0D',
+        "\n" => '%0A'
+      }.freeze
+
       def generate_multipart
         normalized_params = params.flat_map { |key, value| HashConversions.normalize_keys(key, value) }
 
@@ -35,7 +42,7 @@ module HTTParty
           memo += %(Content-Disposition: form-data; name="#{key}")
           # value.path is used to support ActionDispatch::Http::UploadedFile
           # https://github.com/jnunemaker/httparty/pull/585
-          memo += %(; filename="#{file_name(value)}") if file?(value)
+          memo += %(; filename="#{file_name(value).gsub(/["\r\n]/, MULTIPART_FORM_DATA_REPLACEMENT_TABLE)}") if file?(value)
           memo += "\r\n"
           memo += "Content-Type: #{content_type(value)}\r\n" if file?(value)
           memo += "\r\n"
